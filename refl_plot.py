@@ -96,29 +96,59 @@ else:
     print(alt.shape) 
     print(reflectivity.shape)
 
-    upper_gate_indices = []
-    lower_gate_indices = [] 
+    upper_gate = []
+    lower_gate = [] 
 
-    for i in range(len(alt)): 
-       # print(alt[i])
-       temp =  (altrange - alt[i]) 
-       temp[temp> 0] = np.nan
+    range_cut = 5
+    mask_fill_value = -32767
+    for i in range(len(alt)):
+       abs_diff = np.abs(altrange - alt[i]) 
+       flight_level = np.argmin(abs_diff) 
+       refl_all_gates = reflectivity.data[i,:]
+       refl_all_gates[:(flight_level-range_cut)] = np.nan 
+       refl_all_gates[(flight_level+range_cut):] = np.nan
+       refl_all_gates[refl_all_gates == mask_fill_value] = np.nan
+       non_nan_refl_index = np.array(np.where(~(np.isnan(refl_all_gates)))).flatten()
+       #print(non_nan_refl_index)
+       diff_gates = non_nan_refl_index - flight_level
+       try: 
+           upper_gate.append(reflectivity[i][non_nan_refl_index[np.where(diff_gates == (np.min(diff_gates[diff_gates > 0])))[0][0]]])
+       except Exception as e:
+           #print("upper_gate: ", e) 
+           upper_gate.append(np.nan) 
+       try: 
+           lower_gate.append(reflectivity[i][non_nan_refl_index[np.where(diff_gates == (np.max(diff_gates[diff_gates < 0])))[0][0]]])
+       except Exception as e:
+           #print("lower_gate: ", e) 
+           lower_gate.append(np.nan) 
+
+       #print(upper_gate_indices) 
+       #print(lower_gate_indices)
+       #print(non_nan_refl_index)  
+       #print(refl_all_gates) 
+       #print(flight_level) 
+       #print(abs_diff) 
+       #quit()
        #print(np.where(temp == np.nanmax(temp))[0][0])
-       upper_gate.append(reflectivity[i, np.where(temp == np.nanmin(temp))[0][0]])
+       #upper_gate.append(reflectivity[i, np.where(temp == np.nanmin(temp))[0][0]])
     #print(np.array(upper_gate).data)
     #print(np.array(upper_gate)[np.where(upper_gate != np.nan)])
-    a = reflectivity[:10,:]
-    print(a.shape) 
-    for i in range(a.shape[0]):
-        for j in range(a.shape[1]):
-            print(a[i][j]),
-            print( " "), 
-        print("\n") 
-        
+#    a = reflectivity[:10,:]
+#    print(a.shape) 
+#    for i in range(a.shape[0]):
+#        for j in range(a.shape[1]):
+ #           print(a[i][j]),
+ #           print( " "), 
+#        print("\n") 
+     
+    print(len(lower_gate)) 
+    print(len(upper_gate)) 
+    #quit()
+
     plotXY(times, upper_gate)
+    plotXY(times, lower_gate) 
     
-    
- 
+     
 
     #print(coordinates) 
     #print(time_alt)
