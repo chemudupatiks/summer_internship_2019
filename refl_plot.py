@@ -11,6 +11,8 @@ import netCDF4
 from sys import argv
 import seaborn as sb
 import time 
+from matplotlib import interactive 
+from color_loader import getColorMap as gc
 
 # Global variables to hold the selected times and y-value( gate?) 
 coordinates = []
@@ -39,35 +41,40 @@ def onclick(event):
 def plotImage(reflectivity):
     # Color map configuration
     cmap = cm.get_cmap('gist_ncar_r') #gist_ncar_r, gist_ncar , and  prism are other colormaps 
-    
+    #cmap = gc("../colortables/myBkBlAqGrYeOrReViWh200.gp")
+    #cmap = gc("../colortables/BlGrYeOrReVi200.gp")
+    cmap = gc("../colortables/BlAqGrYeOrReVi200.rgb")
     # Plotting the reflectivity image.
-    fig = plt.figure()
+    fig = plt.figure(1)
     plt.imshow(reflectivity.transpose(), cmap = cmap, origin = 'lower')
     plt.colorbar()
     #plt.xticks(times, get_time_hms(times))
+    print(np.arange(0, len(times), 120), get_time_hms(times[np.arange(0, len(times), 120)]))
+    plt.xticks(np.arange(0, len(times), 120), get_time_hms(times[np.arange(0, len(times), 120)]))
     #plt.xlabel('time')
     #plt.ylabel(i)
     #plt.legend()
 
-
+    
     # Establishing connection between the figure and the onClick event. 
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
+    #interactive(True)
     plt.show()
 
     # Closing connection. 
     fig.canvas.mpl_disconnect(cid)
 
 def plotXY(x, y):
-    fig = plt.figure()
+    fig = plt.figure(2)
     plt.plot(x, y) 
 
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
-    plt.show() 
+    #plt.show() 
 
     fig.canvas.mpl_disconnect(cid) 
 
 ### Main script ###
-
+interactive(True)
 n_args = len(argv)
 if n_args <= 1:
     print("please provide the filename(s) to be parsed") 
@@ -88,18 +95,19 @@ else:
     #max_ref = np.max(reflectivity)
     #min_ref = np.min(reflectivity)
 
-    #plotImage(reflectivity)
+    plotImage(reflectivity)
 
     # plot reflectivities of closest upper and lower gate
     altrange = np.array(nc.variables['altrange'][:]) 
-    print(altrange.shape) 
-    print(alt.shape) 
-    print(reflectivity.shape)
+    #print(altrange.shape) 
+    #print(alt.shape) 
+    #print(reflectivity.shape)
 
     upper_gate = []
     lower_gate = [] 
 
-    range_cut = 5
+    range_cut = 5 
+    min_refl = -15
     mask_fill_value = -32767
     for i in range(len(alt)):
        abs_diff = np.abs(altrange - alt[i]) 
@@ -129,31 +137,30 @@ else:
        #print(flight_level) 
        #print(abs_diff) 
        #quit()
-       #print(np.where(temp == np.nanmax(temp))[0][0])
-       #upper_gate.append(reflectivity[i, np.where(temp == np.nanmin(temp))[0][0]])
-    #print(np.array(upper_gate).data)
-    #print(np.array(upper_gate)[np.where(upper_gate != np.nan)])
-#    a = reflectivity[:10,:]
-#    print(a.shape) 
-#    for i in range(a.shape[0]):
-#        for j in range(a.shape[1]):
- #           print(a[i][j]),
- #           print( " "), 
-#        print("\n") 
-     
-    print(len(lower_gate)) 
-    print(len(upper_gate)) 
+    
+    #print(len(lower_gate)) 
+    #print(len(upper_gate)) 
     #quit()
 
-    plotXY(times, upper_gate)
-    plotXY(times, lower_gate) 
+    #plotXY(times, upper_gate)
+    #plotXY(times, lower_gate)
+    temp  = lower_gate[:] 
+    temp2 = upper_gate[:]
     
+    upper_gate = np.array(upper_gate) 
+    lower_gate = np.array(lower_gate) 
+    
+    upper_gate[np.where(np.isnan(upper_gate))] = mask_fill_value 
+    lower_gate[np.where(np.isnan(lower_gate))] = mask_fill_value 
+    
+    lower_gate[lower_gate < min_refl] = np.nan
+    upper_gate[upper_gate < min_refl] = np.nan
      
-
-    #print(coordinates) 
-    #print(time_alt)
-
-    #crop = reflectivity[int(coordinates[0][0]):int(coordinates[1][0])+1][:]
-    #print(crop.shape) 
-    #plt.imshow(crop.transpose(), cmap = cmap, origin = 'lower')
-    #plt.show()
+    #print(np.where(~(np.isnan(upper_gate))))
+     
+    plt.figure(2)
+    plt.plot(times, upper_gate) 
+    plt.plot(times, lower_gate) 
+    plt.xticks(times[np.arange(0, len(times), 120)], get_time_hms(times[np.arange(0, len(times), 120)]))
+    interactive(False)
+    plt.show()
