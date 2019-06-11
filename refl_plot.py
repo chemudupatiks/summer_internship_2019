@@ -17,6 +17,8 @@ from color_loader import getColorMap as gc
 # Global variables to hold the selected times and y-value( gate?) 
 coordinates = []
 time_alt = []
+fig = plt.figure()
+flight_path = [] 
 
 # Converts time in seconds from 1970 to time in HH MM SS format  
 def get_time_hms(seconds):
@@ -31,7 +33,7 @@ def onclick(event):
        x, y = event.xdata, event.ydata
        try:
           #print(get_time_hms([times[int(x)]]), alt[int(y)])
-          print(get_time_hms([times[int(x)]]), y)
+          print(get_time_hms([times[int(x)+ 3000]]), y)
        except Exception as e:
           #print(e)
           return
@@ -47,28 +49,33 @@ def plotImage(reflectivity):
     # Plotting the reflectivity image
     masked_refl = reflectivity
     #masked_refl = nc.variables['reflectivity'][:] 
-    #masked_refl[np.where(masked_refl < -15)] = np.nan
+    masked_refl[np.where(masked_refl < -8)] = np.nan
     #print(np.where(masked_refl < -15))
     #quit()
+    for i in range(len(alt)):
+       abs_diff = np.abs(altrange - alt[i]) 
+       flight_path.append(np.argmin(abs_diff))
+    
     fig = plt.figure(1)
     plt.imshow(masked_refl[3000:, 80:].transpose(), cmap = cmap, origin = 'lower')
     plt.colorbar()
+    plt.plot(np.array(flight_path[3000:])-80) 
     #plt.xticks(times, get_time_hms(times))
     #print(np.arange(0, len(times), 120), get_time_hms(times[np.arange(0, len(times), 120)]))
     plt.xticks(np.arange(0, len(times[3000:]), 120), get_time_hms(times[np.arange(3000, len(times), 120)]))
     plt.yticks(np.arange(0, len(altrange[80:]), 50), altrange[np.arange(80, len(altrange), 50)])
-    #plt.xlabel('time')
-    #plt.ylabel(i)
+    plt.xlabel("Time (UTC)") 
+    plt.ylabel("Altitude (m MSL)")
     #plt.legend()
 
     
     # Establishing connection between the figure and the onClick event. 
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
     #interactive(True)
-    plt.show()
+    #plt.show()
 
     # Closing connection. 
-    fig.canvas.mpl_disconnect(cid)
+    #fig.canvas.mpl_disconnect(cid)
 
 def plotXY(x, y):
     fig = plt.figure(2)
@@ -77,10 +84,10 @@ def plotXY(x, y):
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
     #plt.show() 
 
-    fig.canvas.mpl_disconnect(cid) 
+    #fig.canvas.mpl_disconnect(cid) 
 
 ### Main script ###
-interactive(True)
+#interactive(True)
 n_args = len(argv)
 if n_args <= 1:
     print("please provide the filename(s) to be parsed") 
@@ -115,7 +122,7 @@ else:
     lower_gate = [] 
 
     range_cut = 5 
-    min_refl = -10
+    min_refl = -15
     mask_fill_value = -32767
     for i in range(len(alt)):
        abs_diff = np.abs(altrange - alt[i]) 
@@ -166,10 +173,17 @@ else:
      
     #print(np.where(~(np.isnan(upper_gate))))
      
-    plt.figure(2)
+    fig2 = plt.figure(2)
     plt.plot(times, upper_gate, label="Closest Gate above flight track") 
     plt.plot(times, lower_gate, label="Closest Gate below flight track")
     plt.legend()
+    plt.xlabel("Time (UTC)") 
+    plt.ylabel("Reflectivity (dBZ)")
     plt.xticks(times[np.arange(0, len(times), 120)], get_time_hms(times[np.arange(0, len(times), 120)]))
-    interactive(False)
-    plt.show()
+#    interactive(False)
+    cid = fig2.canvas.mpl_connect('button_press_event', onclick)
+    plt.show() 
+
+    fig2.canvas.mpl_disconnect(cid)
+    fig.canvas.mpl_disconnect(cid) 
+    #plt.show()
