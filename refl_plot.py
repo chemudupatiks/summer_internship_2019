@@ -27,6 +27,7 @@ ver_cut = 80
 refl_upper_gate = np.array([])
 refl_lower_gate = np.array([])
 masked_times = np.array([])
+fig_num = 0
 # Figures 
 fig = plt.figure()  # refl_image
 cid = 0
@@ -82,26 +83,24 @@ def onclick2(event):
   # v_cut       : Cuts the image height (used it to hide the reflectivities at the terrain-level to better see the colors in the area of interest)
   # x_step      : Step size between each x_tick on the x_axis. Reduce to see more times on the x_axis. 
   # y_step      : Step size between each y_tick on the y_axis. 
-def plotImage(refl, t, fl_path, altrange, threshold, h_cut, v_cut, x_step, y_step): # 3000, 80, 120, 50
+def plotImage(refl, t, fl_path, altrange, threshold, h_cut, v_cut_s, v_cut_e, x_step, y_step): # 3000, 80, 120, 50
     ### Color map configuration
-    #cmap = cm.get_cmap('gist_ncar_r') #gist_ncar_r, gist_ncar , and  prism are other colormaps 
-    #cmap = gc("../colortables/myBkBlAqGrYeOrReViWh200.gp")
-    #cmap = gc("../colortables/BlGrYeOrReVi200.gp")
     cmap = gc("../colortables/BlAqGrYeOrReVi200.rgb")
 
 
     ### masking the reflectivity image based on the given threshold. 
     masked_refl = refl # This is causing the rest of the plots to also have masked values according to the threshold.
-    masked_refl[np.where(masked_refl < threshold)] = np.nan
-    #masked_refl[np.where(masked_refl > 4)] = np.nan
+    masked_refl[np.where(reflectivity < threshold)] = np.nan
     
     ### Plotting 
-    fig = plt.figure(1)
-    plt.imshow(masked_refl[h_cut:, v_cut:].transpose(), cmap = cmap, origin = 'lower')
+    global fig_num
+    fig = plt.figure(fig_num)
+    fig_num += 1
+    plt.imshow(masked_refl[h_cut:, v_cut_s:v_cut_e].transpose(), cmap = cmap, origin = 'lower')
     plt.colorbar()
     #plt.plot(np.array(fl_path[h_cut:])-v_cut) 
     plt.xticks(np.arange(0, len(t[h_cut:]), x_step), get_time_hms(t[np.arange(h_cut, len(t), x_step)]))
-    plt.yticks(np.arange(0, len(altrange[v_cut:]), y_step), altrange[np.arange(v_cut, len(altrange), y_step)])
+    plt.yticks(np.arange(0, len(altrange[v_cut_s:v_cut_e]), y_step), altrange[np.arange(v_cut_s, len(altrange[:v_cut_e]), y_step)])
     plt.xlabel("Time (UTC)") 
     plt.ylabel("Altitude (m MSL)")
     plt.title(filename) 
@@ -169,8 +168,9 @@ def plotNearestGateReflectivity(refl, r_c, t, alt, altrange, threshold, x_step, 
       upper_gate[upper_gate < threshold] = np.nan
      
     #print(np.where(~(np.isnan(upper_gate))))
-     
-    fig2 = plt.figure(2)
+    global fig_num 
+    fig2 = plt.figure(fig_num)
+    fig_num +=1
     plt.plot(t[h_cut:], upper_gate[h_cut:], label="Closest Gate above flight track") 
     plt.plot(t[h_cut:], lower_gate[h_cut:], label="Closest Gate below flight track")
     plt.legend()
@@ -226,7 +226,9 @@ def plotDopplerVelocity(vel, t, r_c, alt, altrange, threshold, x_step, h_cut):
       upper_gate[refl_upper_gate < threshold] = np.nan
       #flight_gate[flight_gate < threshold] = np.nan
      
-    fig3 = plt.figure(3)
+    global fig_num  
+    fig3 = plt.figure(fig_num)
+    fig_num+=1
     plt.plot(t[h_cut:], upper_gate[h_cut:], label="Closest Gate above flight track") 
     plt.plot(t[h_cut:], lower_gate[h_cut:], label="Closest Gate below flight track")
     #plt.plot(t, flight_gate, label = "UWKA fit measure")
@@ -282,7 +284,9 @@ def plotLWC_Eddy(fil, t, h_cut, x_step):
     #print(np.array(t).shape)
     time_cut = np.where(full_time == int(t[h_cut]))[0][0] - st_index
     #print(time_cut) 
-    fig4 = plt.figure(4) 
+    global fig_num
+    fig4 = plt.figure(fig_num)
+    fig_num +=1
     time_plot = full_time[st_index:end_index]
     plt.plot(time_plot[time_cut:] , rosemount[time_cut:], label="Rosemount Icing Detector")
     plt.plot(time_plot[time_cut:], dmt100[time_cut:], label = "DMT100") 
@@ -297,7 +301,8 @@ def plotLWC_Eddy(fil, t, h_cut, x_step):
     plt.title(fil) 
     cid4 = fig4.canvas.mpl_connect('button_press_event', onclick2)
     
-    fig5 = plt.figure(5) 
+    fig5 = plt.figure(fig_num)
+    fig_num += 1
     plt.plot(time_plot[time_cut:], eddy[time_cut:]) 
     plt.ylabel("Eddy Dissipation Rate") 
     plt.xlabel("Time (UTC)") 
@@ -337,11 +342,14 @@ else:
        abs_diff = np.abs(alt_range - altitude[i]) 
        flight_path.append(np.argmin(abs_diff))
 
+    # plot vel image 
+    plotImage(vel_corr, times, flight_path, alt_range, min_refl, hor_cut, ver_cut, 150, 120, 50) 
+
     # plot refl image
-    plotImage(reflectivity, times, flight_path, alt_range, min_refl, hor_cut, 80, 120, 50)
+    plotImage(reflectivity, times, flight_path, alt_range, min_refl, hor_cut, 80, 150, 120, 50)
 
     # plot vel image 
-    #plotImage(vel_corr, times, flight_path, alt_range, min_vel, hor_cut, 90, 120, 50) 
+    #plotImage(vel_corr, times, flight_path, alt_range, min_refl, hor_cut, ver_cut, 150, 120, 50) 
 
     # plot reflectivities of closest upper and lower gate
     plotNearestGateReflectivity(reflectivity, range_cut, times, altitude, alt_range, min_refl, 50, hor_cut)  
