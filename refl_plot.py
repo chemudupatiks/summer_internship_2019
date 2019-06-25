@@ -19,7 +19,7 @@ coordinates = []
 time_alt = []
 flight_path = [] 
 range_cut = 5 # number of nearest gates to consider while searching for the nearest gate with a valid reflectivity value
-min_refl = None
+min_refl = -8
 min_vel = -5
 mask_fill_value = -32767
 hor_cut = 3000 
@@ -83,9 +83,12 @@ def onclick2(event):
   # v_cut       : Cuts the image height (used it to hide the reflectivities at the terrain-level to better see the colors in the area of interest)
   # x_step      : Step size between each x_tick on the x_axis. Reduce to see more times on the x_axis. 
   # y_step      : Step size between each y_tick on the y_axis. 
-def plotImage(refl, t, fl_path, altrange, threshold, h_cut, v_cut_s, v_cut_e, x_step, y_step): # 3000, 80, 120, 50
+def plotImage(refl, t, fl_path, altrange, threshold, h_cut, v_cut_s, v_cut_e, x_step, y_step, color_scheme): # 3000, 80, 120, 50
     ### Color map configuration
-    cmap = gc("../colortables/BlAqGrYeOrReVi200.rgb")
+    if color_scheme == 0:
+        cmap = gc("../colortables/BlAqGrYeOrReVi200.rgb")
+    else:
+        cmap = cm.get_cmap('bwr') 
 
 
     ### masking the reflectivity image based on the given threshold. 
@@ -96,7 +99,23 @@ def plotImage(refl, t, fl_path, altrange, threshold, h_cut, v_cut_s, v_cut_e, x_
     global fig_num
     fig = plt.figure(fig_num)
     fig_num += 1
-    plt.imshow(masked_refl[h_cut:, v_cut_s:v_cut_e].transpose(), cmap = cmap, origin = 'lower')
+    if color_scheme == 0:
+        plt.imshow(masked_refl[h_cut:, v_cut_s:v_cut_e].transpose(), cmap = cmap, origin = 'lower')#, vmin = -2.5, vmax = 2.5)
+    else:
+        #pos_mask = masked_refl[h_cut:, v_cut_s:v_cut_e].data[:]
+        #pos_mask[np.where(np.isnan(pos_mask))] = mask_fill_value 
+        #pos_mask[pos_mask < 0] = np.nan
+        #neg_mask = masked_refl[h_cut:, v_cut_s:v_cut_e].data[:]
+        #neg_mask[np.where(np.isnan(neg_mask))] = mask_fill_value 
+        #print(neg_mask >= 0) 
+        #neg_mask[neg_mask >= 0] = np.nan
+        #print(neg_mask) 
+        #neg_mask[neg_mask == mask_fill_value] = np.nan
+        #print(neg_mask) 
+        plt.imshow(masked_refl[h_cut:, v_cut_s:v_cut_e].transpose(), cmap = cmap, origin = 'lower', vmin = -0.5, vmax = 0.5)
+        #plt.imshow(pos_mask.transpose(), cmap = cmap, origin = 'lower')
+        #plt.imshow(neg_mask.transpose(), cmap = cmap, origin = 'lower') 
+
     plt.colorbar()
     #plt.plot(np.array(fl_path[h_cut:])-v_cut) 
     plt.xticks(np.arange(0, len(t[h_cut:]), x_step), get_time_hms(t[np.arange(h_cut, len(t), x_step)]))
@@ -312,8 +331,19 @@ def plotLWC_Eddy(fil, t, h_cut, x_step):
     cid5 = fig5.canvas.mpl_connect('button_press_event', onclick2)
    
     
-
-
+def get_time_intervals(t, threshold, h_cut):
+    #print(refl_upper_gate) 
+    #print(refl_lower_gate) 
+    #print(np.where(refl_upper_gate[hor_cut:] != mask_fill_value)[0] + hor_cut)
+    time_in_cells = np.where(refl_upper_gate >= threshold)[0]
+    print(time_in_cells)
+    time_in_cells = time_in_cells[time_in_cells >= h_cut]
+    print(time_in_cells)
+    time_in_cells = t[time_in_cells]
+    print(time_in_cells) 
+    #print(np.where(refl_upper_gate < threshold))
+    #quit()
+    return time_in_cells
 
 ### Main script ###
 n_args = len(argv)
@@ -343,10 +373,10 @@ else:
        flight_path.append(np.argmin(abs_diff))
 
     # plot vel image 
-    plotImage(vel_corr, times, flight_path, alt_range, min_refl, hor_cut, ver_cut, 150, 120, 50) 
+    plotImage(vel_corr, times, flight_path, alt_range, min_refl, hor_cut, ver_cut, 150, 120, 50, 1) 
 
     # plot refl image
-    plotImage(reflectivity, times, flight_path, alt_range, min_refl, hor_cut, 80, 150, 120, 50)
+    plotImage(reflectivity, times, flight_path, alt_range, min_refl, hor_cut, 80, 150, 120, 50, 0)
 
     # plot vel image 
     #plotImage(vel_corr, times, flight_path, alt_range, min_refl, hor_cut, ver_cut, 150, 120, 50) 
@@ -356,7 +386,9 @@ else:
 
     plotDopplerVelocity(vel_corr, times, range_cut, altitude, alt_range, min_refl, 50, hor_cut)
     
-    plotLWC_Eddy(argv[2], times, hor_cut, 50) 
+    plotLWC_Eddy(argv[2], times, hor_cut, 50)
+
+    get_time_intervals(times, min_refl, hor_cut) 
 
    # Show all plots   
     plt.show() 
