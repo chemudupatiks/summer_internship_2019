@@ -268,7 +268,7 @@ def plotLWC_Eddy(fil, t, h_cut, x_step):
         print("Please check the validity of the input files")
         quit()
     
-
+    time_in_cells = get_time_intervals(t, min_refl, h_cut)
     full_time = nc.variables['time'][:]
     dt = datetime(2017, 1, 1) 
     #print(str(dt)) 
@@ -285,6 +285,13 @@ def plotLWC_Eddy(fil, t, h_cut, x_step):
     st_index = np.where(full_time == int(t[0]))[0][0]
     #print(st_index)
     #quit()
+    
+    time_in_gcs = []
+    for i in time_in_cells: 
+        time_in_gcs.append(np.where(full_time == int(i))[0][0])
+
+    #print(time_in_gcs)
+    
     end_index = int(np.where(full_time == int(t[len(t)-1]))[0])+1
     #print(end_index)
     rosemount = nc.variables['rlwc'][st_index:end_index]
@@ -308,10 +315,15 @@ def plotLWC_Eddy(fil, t, h_cut, x_step):
     fig_num +=1
     time_plot = full_time[st_index:end_index]
     plt.plot(time_plot[time_cut:] , rosemount[time_cut:], label="Rosemount Icing Detector")
+    plt.scatter(full_time[time_in_gcs], rosemount[time_in_gcs - st_index], marker= "^")
     plt.plot(time_plot[time_cut:], dmt100[time_cut:], label = "DMT100") 
-    plt.plot(time_plot[time_cut:], dmtcdp[time_cut:], label = "DMT CDP") 
+    plt.scatter(full_time[time_in_gcs], dmt100[time_in_gcs - st_index], marker= "8")
+    plt.plot(time_plot[time_cut:], dmtcdp[time_cut:], label = "DMT CDP")
+    plt.scatter(full_time[time_in_gcs], dmtcdp[time_in_gcs - st_index], marker= "<")
     plt.plot(time_plot[time_cut:], nevz[time_cut:], label = "Nevzorov") 
-    plt.plot(time_plot[time_cut:], total_nevz[time_cut:], label = "Nev. Total LW") 
+    plt.scatter(full_time[time_in_gcs], nevz[time_in_gcs - st_index], marker= ">")
+    plt.plot(time_plot[time_cut:], total_nevz[time_cut:], label = "Nev. Total LW")
+    plt.scatter(full_time[time_in_gcs], total_nevz[time_in_gcs - st_index], marker= "D")
     plt.legend() 
     plt.xlabel("Time (UTC)") 
     plt.ylabel("LWC (g m^-3)") 
@@ -323,6 +335,7 @@ def plotLWC_Eddy(fil, t, h_cut, x_step):
     fig5 = plt.figure(fig_num)
     fig_num += 1
     plt.plot(time_plot[time_cut:], eddy[time_cut:]) 
+    plt.scatter(full_time[time_in_gcs], eddy[time_in_gcs - st_index], marker = "*")
     plt.ylabel("Eddy Dissipation Rate") 
     plt.xlabel("Time (UTC)") 
     plt.xticks(time_plot[np.arange(time_cut, len(time_plot), x_step)], get_time_hms(time_plot[np.arange(time_cut, len(time_plot), x_step)]))
@@ -335,15 +348,17 @@ def get_time_intervals(t, threshold, h_cut):
     #print(refl_upper_gate) 
     #print(refl_lower_gate) 
     #print(np.where(refl_upper_gate[hor_cut:] != mask_fill_value)[0] + hor_cut)
-    time_in_cells = np.where(refl_upper_gate >= threshold)[0]
-    print(time_in_cells)
+    time_in_cells = np.where(refl_lower_gate >= threshold)[0]
+    #print(time_in_cells)
     time_in_cells = time_in_cells[time_in_cells >= h_cut]
-    print(time_in_cells)
+    #print(time_in_cells)
     time_in_cells = t[time_in_cells]
-    print(time_in_cells) 
+    #print(time_in_cells) 
     #print(np.where(refl_upper_gate < threshold))
     #quit()
     return time_in_cells
+
+
 
 ### Main script ###
 n_args = len(argv)
