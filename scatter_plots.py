@@ -93,8 +93,16 @@ def XY_scatter_plot(filename, x, x_time, y, y_time, date = None, s_time = None, 
                 for ind in x_index:
                     tim_x = x_sub_time[ind] 
                     tim_y = y_sub_time[ind]
-                    if (tim_x > start_seconds and tim_x < end_seconds) and (tim_y > start_seconds and tim_y < end_seconds): 
+                    if (tim_x >= start_seconds and tim_x <= end_seconds) and (tim_y >= start_seconds and tim_y <= end_seconds): 
                         inside_gcs[ind] = True
+                    else: 
+                        if y_sub[ind] >= -8: 
+                            print(xlabel,": ", tim_x) 
+                            print(ylabel,": ", tim_y) 
+                            print("refl: ", y_sub[ind]) 
+                            print("start_seconds: ", start_seconds) 
+                            print("end_seconds: ", end_seconds) 
+                            print("\n\n\n") 
                 #y_index = np.where(y_sub_time == e) 
                 #print(x_index) 
                 #print(y_index) 
@@ -226,7 +234,7 @@ else:
 
 
     #XY_scatter_plot(filename, nevz, full_time, vel_corr, times.astype(int))
-    XY_scatter_plot(filename, nevz, full_time, lower_gate_vel, times, date="03/09/2017", s_time = "14.23.11", e_time="14.24.38", xlabel = "Nevzorov LWC", ylabel = "lower gate Doppler vel") 
+    #XY_scatter_plot(filename, nevz, full_time, lower_gate_vel, times, date="03/09/2017", s_time = "14.23.11", e_time="14.24.38", xlabel = "Nevzorov LWC", ylabel = "lower gate Doppler vel") 
     #XY_scatter_plot(filename, lower_gate_vel, times,  nevz, full_time, date="03/09/2017", s_time = "14.23.11", e_time="14.24.38", xlabel = "Nevzorov LWC", ylabel = "lower gate Doppler vel") 
     #XY_scatter_plot(filename, nevz, full_time, upper_gate_vel, times, date="03/09/2017", s_time = "14.23.11", e_time="14.24.38", xlabel = "Nevzorov LWC", ylabel = "upper gate Doppler vel")
     #XY_scatter_plot(filename, nevz, full_time, dmt100 , full_time, date="03/09/2017", s_time = "14.23.11", e_time="14.24.38", xlabel = "Nevzorov LWC", ylabel = "DMT100") 
