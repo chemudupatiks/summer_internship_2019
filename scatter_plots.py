@@ -34,16 +34,30 @@ def expand_array(x_sub, x_sub_time, y_sub, y_sub_time):
     #print(high_res_time[-5:])
     return np.array(low_res_exp), np.array(low_res_time_exp) 
 
-
+def XY_scatter_plot_diff 
 
 # Have to pass time arrays with seconds from Jan 1 1970. Also the x, and y arrays must be linear (1D).
-def XY_scatter_plot(filename, x, x_time, y, y_time, date = None, s_time = None, e_time = None, xlabel = None, ylabel = None ):    
+def XY_scatter_plot(filename, x, x_time, y, y_time, radar = False, date = None, s_time = None, e_time = None, xlabel = None, ylabel = None, threshold = None ):    
     x_st_index = -1; x_end_index = -1; y_st_index = -1; y_end_index = -1
     x_sub_time = x_time[:]
     y_sub_time = y_time[:]
     x_sub = x[:] 
     y_sub = y[:] 
     title = None
+
+    if radar: 
+        assert threshold is not None, "Threshold cannot be none when radar data is passed." 
+        try:
+        # Opens the netCdf file and exits if incorrect filename  is provided. 
+        nc = netCDF4.Dataset(filename, 'r')
+        except:
+            print("Please check the validity of the input files")
+            quit()
+
+        # extracts reflectivities, times, and altitude from the cdf file. 
+        reflectivity  = nc.variables['reflectivity'][:]
+        times = nc.variables['time'][:]
+        
     if date and s_time and e_time:
         dt = datetime(1970, 1, 1)  
         start_time = date +" "+ s_time 
@@ -58,19 +72,21 @@ def XY_scatter_plot(filename, x, x_time, y, y_time, date = None, s_time = None, 
         y_sub_time = y_time[y_st_index:y_end_index+1]
         x_sub = x[x_st_index:x_end_index+1]
         y_sub = y[y_st_index:y_end_index+1] 
+        if radar: 
+            refl_st_index = np.where(x_time.astype(int) == start_time)[0][0]
+            refl_end_index = np.where(x_time.astype(int) == end_time)[0][-1]
+            reflectivity = reflectivity[refl_st_index:refl_end_index+1]
+            times = times[refl_st_index:refl_end_index+1] 
         title = date + " " + s_time + "--" + e_time
-        #print(x_sub_time.shape)
-        #print(x_sub.shape) 
-        #print(y_sub.shape) 
-        #print(y_sub_time.shape)
-        #print(start_time) 
-        #print(end_time) 
-        #print(x_sub_time[-5:]) 
-        #print(y_sub_time[-5:]) 
+
     if(x_sub_time.shape[0] >  y_sub_time.shape[0]): 
         y_sub, y_sub_time = expand_array(x_sub, x_sub_time, y_sub, y_sub_time) 
     elif y_sub_time.shape[0] > x_sub_time.shape[0]:
         x_sub, x_sub_time = expand_array(x_sub, x_sub_time, y_sub, y_sub_time) 
+        
+    if radar:
+        if times.shape[0] != x_sub_time.shape[0]:
+            raise Exception("The arrays must of same size, times is of size " + str(times.shape[0]) + " where as x-sub_time is " + str(x_sub_time.shape[0]))
     #print(x_sub_time.shape)
     #print(x_sub.shape) 
     #print(y_sub.shape) 
@@ -78,31 +94,35 @@ def XY_scatter_plot(filename, x, x_time, y, y_time, date = None, s_time = None, 
     inside_gcs = np.array([False] * x_sub_time.shape[0]) 
     #print(color_scheme)
     #print(x_sub_time[-1] == x_sub_time[-2]) 
-
-    gcs_csv = pd.read_csv("../csv/gcs.csv")
-    for i in range(gcs_csv.shape[0]):
-        #print(gcs_csv.iloc[i])
-        #print("\n\n\n")
-        start_seconds = gcs_csv.loc[i]['start_seconds']
-        end_seconds = gcs_csv.loc[i]['end_seconds']
-        array = np.arange(int(start_seconds) ,int(end_seconds)+1)
-        for e in array:
-            if e >= start_time and e <= end_time: 
-                x_index = np.where(x_sub_time == e)[0]
-                #print(x_index)
-                for ind in x_index:
-                    tim_x = x_sub_time[ind] 
-                    tim_y = y_sub_time[ind]
-                    if (tim_x >= start_seconds and tim_x <= end_seconds) and (tim_y >= start_seconds and tim_y <= end_seconds): 
-                        inside_gcs[ind] = True
-                    else: 
-                        if y_sub[ind] >= -8: 
-                            print(xlabel,": ", tim_x) 
-                            print(ylabel,": ", tim_y) 
-                            print("refl: ", y_sub[ind]) 
-                            print("start_seconds: ", start_seconds) 
-                            print("end_seconds: ", end_seconds) 
-                            print("\n\n\n") 
+    if radar: 
+        x_index = np.where(reflectivity >= threshold)[0]
+        inside_gcs[x_index] = True         
+    else: 
+        gcs_csv = pd.read_csv("../csv/gcs.csv")
+        for i in range(gcs_csv.shape[0]):
+            #print(gcs_csv.iloc[i])
+            #print("\n\n\n")
+            start_seconds = gcs_csv.loc[i]['start_seconds']
+            end_seconds = gcs_csv.loc[i]['end_seconds']
+            array = np.arange(int(start_seconds) ,int(end_seconds)+1)
+            for e in array:
+                if e >= start_time and e <= end_time: 
+                    x_index = np.where(x_sub_time == e)[0]
+                    inside_gcs[x_index] = True
+#                print(x_index)
+#                for ind in x_index:
+#                    tim_x = x_sub_time[ind] 
+#                    tim_y = y_sub_time[ind]
+#                    if (tim_x >= start_seconds and tim_x <= end_seconds) and (tim_y >= start_seconds and tim_y <= end_seconds): 
+#                        inside_gcs[ind] = True
+#                    else: 
+#                        if y_sub[ind] >= -8: 
+#                            print(xlabel,": ", tim_x) 
+#                            print(ylabel,": ", tim_y) 
+#                            print("refl: ", y_sub[ind]) 
+#                            print("start_seconds: ", start_seconds) 
+#                            print("end_seconds: ", end_seconds) 
+#                            print("\n\n\n") 
                 #y_index = np.where(y_sub_time == e) 
                 #print(x_index) 
                 #print(y_index) 
@@ -238,5 +258,5 @@ else:
     #XY_scatter_plot(filename, lower_gate_vel, times,  nevz, full_time, date="03/09/2017", s_time = "14.23.11", e_time="14.24.38", xlabel = "Nevzorov LWC", ylabel = "lower gate Doppler vel") 
     #XY_scatter_plot(filename, nevz, full_time, upper_gate_vel, times, date="03/09/2017", s_time = "14.23.11", e_time="14.24.38", xlabel = "Nevzorov LWC", ylabel = "upper gate Doppler vel")
     #XY_scatter_plot(filename, nevz, full_time, dmt100 , full_time, date="03/09/2017", s_time = "14.23.11", e_time="14.24.38", xlabel = "Nevzorov LWC", ylabel = "DMT100") 
-    XY_scatter_plot(filename, nevz, full_time, lower_gate_refl, times, date="03/09/2017", s_time = "14.23.11", e_time="14.24.38", xlabel = "Nevzorov LWC", ylabel = "nearest lower gate refl") 
+    XY_scatter_plot(filename, nevz, full_time, lower_gate_refl, times, date="03/09/2017", s_time = "14.23.11", e_time="14.24.38", xlabel = "Nevzorov LWC", ylabel = "nearest lower gate refl", radar = True) 
 
