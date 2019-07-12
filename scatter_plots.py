@@ -22,19 +22,32 @@ def expand_array(x_sub, x_sub_time, y_sub, y_sub_time):
     else: 
         low_res = x_sub; low_res_time = x_sub_time 
         high_res = y_sub; high_res_time = y_sub_time
-    for i in range(low_res.shape[0]): 
-        time_match = np.where(high_res_time.astype(int) == low_res_time[i]) 
-        #print(time_match[0]) 
-        for j in range(time_match[0].shape[0]): 
-            low_res_time_exp.append(low_res_time[i]) 
-            low_res_exp.append(low_res[i]) 
+#    for i in range(low_res.shape[0]): 
+#        time_match = np.where(high_res_time.astype(int) == low_res_time[i]) 
+#        #print(time_match[0]) 
+#        for j in range(time_match[0].shape[0]): 
+#            low_res_time_exp.append(low_res_time[i]) 
+#            low_res_exp.append(low_res[i]) 
+    low_res_exp = np.interp(low_res_time, high_res_time, high_res)
+    low_res_time_exp = high_res_time
     #print(np.array(low_res_exp).shape) 
     #print(high_res.shape)
     #print(low_res_time_exp[-5:]) 
     #print(high_res_time[-5:])
     return np.array(low_res_exp), np.array(low_res_time_exp) 
 
-
+def running_average(array, num):
+    averaged_array = np.array([])
+    if len(array) < num: 
+        raise Exception ("window too large for the given array size")
+    else:
+        for i in range(len(array)):
+            end = i + num
+            if end > len(array)+1: 
+                end = len(array)+1
+            averaged_array.append(array[i, end])
+    return averaged_array           
+    
 
 # Have to pass time arrays with seconds from Jan 1 1970. Also the x, and y arrays must be linear (1D).
 def XY_scatter_plot(filename, x, x_time, y, y_time, date = None, s_time = None, e_time = None, xlabel = None, ylabel = None ):    
