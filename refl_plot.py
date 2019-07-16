@@ -35,7 +35,10 @@ fig2 = plt.figure() # time series of refl at nearest gates
 cid2 = 0
 fig3 = plt.figure() # time series of refl at nearest gates 
 cid3 = 0
-
+fig4 = plt.figure()
+cid4 = 0
+fig5 = plt.figure()
+cid5 = 0
 
 # Converts time in seconds from 1970 to time in HH MM SS format (string object)
 def get_time_hms(seconds):
@@ -83,7 +86,7 @@ def onclick2(event):
   # v_cut       : Cuts the image height (used it to hide the reflectivities at the terrain-level to better see the colors in the area of interest)
   # x_step      : Step size between each x_tick on the x_axis. Reduce to see more times on the x_axis. 
   # y_step      : Step size between each y_tick on the y_axis. 
-def plotImage(refl, t, fl_path, altrange, threshold, h_cut, v_cut_s, v_cut_e, x_step, y_step, color_scheme): # 3000, 80, 120, 50
+def plotImage(refl, t, fl_path, altrange, threshold, h_cut_s, h_cut_e, v_cut_s, v_cut_e, x_step, y_step, color_scheme): # 3000, 80, 120, 50
     ### Color map configuration
     if color_scheme == 0:
         cmap = gc("../colortables/BlAqGrYeOrReVi200.rgb")
@@ -100,7 +103,7 @@ def plotImage(refl, t, fl_path, altrange, threshold, h_cut, v_cut_s, v_cut_e, x_
     fig = plt.figure(fig_num)
     fig_num += 1
     if color_scheme == 0:
-        plt.imshow(masked_refl[h_cut:, v_cut_s:v_cut_e].transpose(), cmap = cmap, origin = 'lower')#, vmin = -2.5, vmax = 2.5)
+        plt.imshow(masked_refl[h_cut_s:h_cut_e, v_cut_s:v_cut_e].transpose(), cmap = cmap, origin = 'lower')#, vmin = -2.5, vmax = 2.5)
     else:
         #pos_mask = masked_refl[h_cut:, v_cut_s:v_cut_e].data[:]
         #pos_mask[np.where(np.isnan(pos_mask))] = mask_fill_value 
@@ -112,13 +115,13 @@ def plotImage(refl, t, fl_path, altrange, threshold, h_cut, v_cut_s, v_cut_e, x_
         #print(neg_mask) 
         #neg_mask[neg_mask == mask_fill_value] = np.nan
         #print(neg_mask) 
-        plt.imshow(masked_refl[h_cut:, v_cut_s:v_cut_e].transpose(), cmap = cmap, origin = 'lower', vmin = -0.5, vmax = 0.5)
+        plt.imshow(masked_refl[h_cut_s:h_cut_e, v_cut_s:v_cut_e].transpose(), cmap = cmap, origin = 'lower', vmin = -0.5, vmax = 0.5)
         #plt.imshow(pos_mask.transpose(), cmap = cmap, origin = 'lower')
         #plt.imshow(neg_mask.transpose(), cmap = cmap, origin = 'lower') 
 
     plt.colorbar()
-    #plt.plot(np.array(fl_path[h_cut:])-v_cut) 
-    plt.xticks(np.arange(0, len(t[h_cut:]), x_step), get_time_hms(t[np.arange(h_cut, len(t), x_step)]))
+    plt.plot(np.array(fl_path[h_cut_s:h_cut_e])-v_cut_s) 
+    plt.xticks(np.arange(0, len(t[h_cut_s:h_cut_e]), x_step), get_time_hms(t[np.arange(h_cut_s, len(t[:h_cut_e]), x_step)]))
     plt.yticks(np.arange(0, len(altrange[v_cut_s:v_cut_e]), y_step), altrange[np.arange(v_cut_s, len(altrange[:v_cut_e]), y_step)])
     plt.xlabel("Time (UTC)") 
     plt.ylabel("Altitude (m MSL)")
@@ -139,7 +142,7 @@ def plotImage(refl, t, fl_path, altrange, threshold, h_cut, v_cut_s, v_cut_e, x_
   # altrange  : Altitude at each cell 
   # threshold : The min refl value, all values below it are masked
   # x_step    : Step size between two x_ticks, decrease value to increase the number of x_ticks on the x axis
-def plotNearestGateReflectivity(refl, r_c, t, alt, altrange, threshold, x_step, h_cut):
+def plotNearestGateReflectivity(refl, r_c, t, alt, altrange, threshold, x_step, h_cut_s, h_cut_e):
     upper_gate = []
     lower_gate = [] 
 
@@ -190,18 +193,18 @@ def plotNearestGateReflectivity(refl, r_c, t, alt, altrange, threshold, x_step, 
     global fig_num 
     fig2 = plt.figure(fig_num)
     fig_num +=1
-    plt.plot(t[h_cut:], upper_gate[h_cut:], label="Closest Gate above flight track") 
-    plt.plot(t[h_cut:], lower_gate[h_cut:], label="Closest Gate below flight track")
+    plt.plot(t[h_cut_s:h_cut_e], upper_gate[h_cut_s:h_cut_e], label="Closest Gate above flight track") 
+    plt.plot(t[h_cut_s:h_cut_e], lower_gate[h_cut_s:h_cut_e], label="Closest Gate below flight track")
     plt.legend()
     plt.xlabel("Time (UTC)") 
     plt.ylabel("Reflectivity (dBZ)")
-    plt.xticks(t[np.arange(h_cut, len(t), x_step)], get_time_hms(t[np.arange(h_cut, len(t), x_step)]))
+    plt.xticks(t[np.arange(h_cut_s, len(t[:h_cut_e]), x_step)], get_time_hms(t[np.arange(h_cut_s, len(t[:h_cut_e]), x_step)]))
     plt.grid(True) 
     plt.title(filename) 
     cid2 = fig2.canvas.mpl_connect('button_press_event', onclick2)
 
 
-def plotDopplerVelocity(vel, t, r_c, alt, altrange, threshold, x_step, h_cut):
+def plotDopplerVelocity(vel, t, r_c, alt, altrange, threshold, x_step, h_cut_s, h_cut_e):
     upper_gate = []
     lower_gate = []
     #flight_gate = []
@@ -248,19 +251,19 @@ def plotDopplerVelocity(vel, t, r_c, alt, altrange, threshold, x_step, h_cut):
     global fig_num  
     fig3 = plt.figure(fig_num)
     fig_num+=1
-    plt.plot(t[h_cut:], upper_gate[h_cut:], label="Closest Gate above flight track") 
-    plt.plot(t[h_cut:], lower_gate[h_cut:], label="Closest Gate below flight track")
+    plt.plot(t[h_cut_s:h_cut_e], upper_gate[h_cut_s:h_cut_e], label="Closest Gate above flight track") 
+    plt.plot(t[h_cut_s:h_cut_e], lower_gate[h_cut_s:h_cut_e], label="Closest Gate below flight track")
     #plt.plot(t, flight_gate, label = "UWKA fit measure")
     plt.legend()
     plt.xlabel("Time (UTC)") 
     plt.ylabel("Doppler Velocity (m/s)")
-    plt.xticks(t[np.arange(h_cut, len(t), x_step)], get_time_hms(t[np.arange(h_cut, len(t), x_step)]))
+    plt.xticks(t[np.arange(h_cut_s, len(t[:h_cut_e]), x_step)], get_time_hms(t[np.arange(h_cut_s, len(t[:h_cut_e]), x_step)]))
     plt.grid(True) 
     plt.title(filename) 
     cid3 = fig3.canvas.mpl_connect('button_press_event', onclick2)
 
 
-def plotLWC_Eddy(fil, t, h_cut, x_step):
+def plotLWC_Eddy(fil, t, h_cut_s, h_cut_e, x_step):
     try:
         # Opens the netCdf file and exits if incorrect filename  is provided. 
         nc = netCDF4.Dataset(fil,'r')
@@ -268,7 +271,8 @@ def plotLWC_Eddy(fil, t, h_cut, x_step):
         print("Please check the validity of the input files")
         quit()
     
-    time_in_cells = get_time_intervals(t, min_refl, h_cut)
+    time_in_cells = get_time_intervals(t, min_refl, h_cut_s, h_cut_e)
+    #print(time_in_cells) 
     full_time = nc.variables['time'][:]
     dt = datetime(2017, 1, 1) 
     #print(str(dt)) 
@@ -278,7 +282,7 @@ def plotLWC_Eddy(fil, t, h_cut, x_step):
     #print(str(time.mktime(dt.timetuple())))
     #print(dt.strftime("%s"))
     #print(t[len(t)-1])
-    #print(full_time) 
+    #print(full_time) -
     full_time += (dt - dt2).total_seconds() 
     full_time = np.array(full_time).astype(int)
     #print(full_time.shape) 
@@ -308,49 +312,51 @@ def plotLWC_Eddy(fil, t, h_cut, x_step):
     #eddy[eddy<0] = np.nan
     #print(np.array(rosemount).shape) 
     #print(np.array(t).shape)
-    time_cut = np.where(full_time == int(t[h_cut]))[0][0] - st_index
+    time_cut_s = np.where(full_time == int(t[h_cut_s]))[0][0] - st_index
+    time_cut_e = np.where(full_time == int(t[h_cut_e]))[0][-1] - st_index
     #print(time_cut) 
     global fig_num
     fig4 = plt.figure(fig_num)
     fig_num +=1
     time_plot = full_time[st_index:end_index]
-    plt.plot(time_plot[time_cut:] , rosemount[time_cut:], label="Rosemount Icing Detector")
+    plt.plot(time_plot[time_cut_s:time_cut_e] , rosemount[time_cut_s:time_cut_e], label="Rosemount Icing Detector")
     plt.scatter(full_time[time_in_gcs], rosemount[time_in_gcs - st_index], marker= "^")
-    plt.plot(time_plot[time_cut:], dmt100[time_cut:], label = "DMT100") 
+    plt.plot(time_plot[time_cut_s:time_cut_e], dmt100[time_cut_s:time_cut_e], label = "DMT100") 
     plt.scatter(full_time[time_in_gcs], dmt100[time_in_gcs - st_index], marker= "8")
-    plt.plot(time_plot[time_cut:], dmtcdp[time_cut:], label = "DMT CDP")
+    plt.plot(time_plot[time_cut_s:time_cut_e], dmtcdp[time_cut_s:time_cut_e], label = "DMT CDP")
     plt.scatter(full_time[time_in_gcs], dmtcdp[time_in_gcs - st_index], marker= "<")
-    plt.plot(time_plot[time_cut:], nevz[time_cut:], label = "Nevzorov") 
+    plt.plot(time_plot[time_cut_s:time_cut_e], nevz[time_cut_s:time_cut_e], label = "Nevzorov") 
     plt.scatter(full_time[time_in_gcs], nevz[time_in_gcs - st_index], marker= ">")
-    plt.plot(time_plot[time_cut:], total_nevz[time_cut:], label = "Nev. Total LW")
+    plt.plot(time_plot[time_cut_s:time_cut_e], total_nevz[time_cut_s:time_cut_e], label = "Nev. Total LW")
     plt.scatter(full_time[time_in_gcs], total_nevz[time_in_gcs - st_index], marker= "D")
     plt.legend() 
     plt.xlabel("Time (UTC)") 
     plt.ylabel("LWC (g m^-3)") 
-    plt.xticks(time_plot[np.arange(time_cut, len(time_plot), x_step)], get_time_hms(time_plot[np.arange(time_cut, len(time_plot), x_step)]))
+    plt.xticks(time_plot[np.arange(time_cut_s, len(time_plot[:time_cut_e]), x_step)], get_time_hms(time_plot[np.arange(time_cut_s, len(time_plot[:time_cut_e]), x_step)]))
     plt.grid(True) 
     plt.title(fil) 
     cid4 = fig4.canvas.mpl_connect('button_press_event', onclick2)
     
     fig5 = plt.figure(fig_num)
     fig_num += 1
-    plt.plot(time_plot[time_cut:], eddy[time_cut:]) 
+    plt.plot(time_plot[time_cut_s:time_cut_e], eddy[time_cut_s:time_cut_e]) 
     plt.scatter(full_time[time_in_gcs], eddy[time_in_gcs - st_index], marker = "*")
     plt.ylabel("Eddy Dissipation Rate") 
     plt.xlabel("Time (UTC)") 
-    plt.xticks(time_plot[np.arange(time_cut, len(time_plot), x_step)], get_time_hms(time_plot[np.arange(time_cut, len(time_plot), x_step)]))
+    plt.xticks(time_plot[np.arange(time_cut_s, len(time_plot[:time_cut_e]), x_step)], get_time_hms(time_plot[np.arange(time_cut_s, len(time_plot[:time_cut_e]), x_step)]))
     plt.grid(True)
     plt.title(fil) 
     cid5 = fig5.canvas.mpl_connect('button_press_event', onclick2)
    
     
-def get_time_intervals(t, threshold, h_cut):
+def get_time_intervals(t, threshold, h_cut_s, h_cut_e):
     #print(refl_upper_gate) 
     #print(refl_lower_gate) 
     #print(np.where(refl_upper_gate[hor_cut:] != mask_fill_value)[0] + hor_cut)
     time_in_cells = np.where(refl_lower_gate >= threshold)[0]
     #print(time_in_cells)
-    time_in_cells = time_in_cells[time_in_cells >= h_cut]
+    time_in_cells = time_in_cells[time_in_cells >= h_cut_s]
+    time_in_cells = time_in_cells[time_in_cells <= h_cut_e]
     #print(time_in_cells)
     time_in_cells = t[time_in_cells]
     #print(time_in_cells) 
@@ -388,22 +394,22 @@ else:
        flight_path.append(np.argmin(abs_diff))
 
     # plot vel image 
-    plotImage(vel_corr, times, flight_path, alt_range, min_refl, hor_cut, ver_cut, 150, 120, 50, 1) 
+    plotImage(vel_corr, times, flight_path, alt_range, min_refl, 0, None,  ver_cut, 150, 120, 50, 1) 
 
     # plot refl image
-    plotImage(reflectivity, times, flight_path, alt_range, min_refl, hor_cut, 80, 150, 120, 50, 0)
+    plotImage(reflectivity, times, flight_path, alt_range, min_refl, hor_cut, 3600, 80, 150, 120, 50, 0)
 
     # plot vel image 
     #plotImage(vel_corr, times, flight_path, alt_range, min_refl, hor_cut, ver_cut, 150, 120, 50) 
 
     # plot reflectivities of closest upper and lower gate
-    plotNearestGateReflectivity(reflectivity, range_cut, times, altitude, alt_range, min_refl, 50, hor_cut)  
+    plotNearestGateReflectivity(reflectivity, range_cut, times, altitude, alt_range, min_refl, 50, hor_cut, 3500)  
 
-    plotDopplerVelocity(vel_corr, times, range_cut, altitude, alt_range, min_refl, 50, hor_cut)
+    plotDopplerVelocity(vel_corr, times, range_cut, altitude, alt_range, min_refl, 50, hor_cut, 3500)
     
-    plotLWC_Eddy(argv[2], times, hor_cut, 50)
+    plotLWC_Eddy(argv[2], times, hor_cut, 3500, 50)
 
-    get_time_intervals(times, min_refl, hor_cut) 
+    #get_time_intervals(times, min_refl, hor_cut, 3500) 
 
    # Show all plots   
     plt.show() 
